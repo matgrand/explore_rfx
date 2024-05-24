@@ -5,7 +5,7 @@ import random
 
 print('MDSplus version:', mds.__version__)
 
-MAX_DEPTH = 6 # maximum depth to traverse the tree
+MAX_DEPTH = 5 # maximum depth to traverse the tree
 
 rfx = mds.Tree('rfx', 30810, 'readonly') # open the tree
 
