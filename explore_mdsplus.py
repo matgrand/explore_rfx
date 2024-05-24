@@ -18,7 +18,7 @@ def traverse_tree(node, level=0):
 # traverse_tree(rfx.getNode('\\TOP')) # start the traversal at the top node
 
 # do the same but without recursion
-MAX_DEPTH = 3
+MAX_DEPTH = 5
 curr_nodes = [rfx.getNode('\\TOP')]
 for d in range(MAX_DEPTH):
     print('Depth:', d)
