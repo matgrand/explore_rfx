@@ -24,7 +24,7 @@ for d in range(MAX_DEPTH):
     print('Depth:', d)
     next_nodes = []
     for node in curr_nodes:
-        print(node.node_name)
+        print("   " * d + node.node_name)
         try:
             for child in node.getChildren():
                 next_nodes.append(child)
