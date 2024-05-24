@@ -18,7 +18,7 @@ ENDC = '\033[0m'
 
 def traverse_tree(node, level=0, path=''):
     if level >= MAX_DEPTH: return # stop if the maximum depth is reached
-    path = path + COLORS[level] + node.node_name + ENDC
+    path = path + '/' + COLORS[level] + node.node_name + ENDC
     # print(COLORS[level] + '   ' * level + node.node_name + ENDC) # print the name of the node 
     print(path)
     children = node.getChildren() # get the children of the node
