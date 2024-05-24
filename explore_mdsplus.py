@@ -25,5 +25,9 @@ for d in range(MAX_DEPTH):
     next_nodes = []
     for node in curr_nodes:
         print(node.node_name)
-        next_nodes += node.getChildren()
+        try:
+            for child in node.getChildren():
+                next_nodes.append(child)
+        except: pass
+    
     curr_nodes = next_nodes
