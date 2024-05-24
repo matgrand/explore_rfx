@@ -37,4 +37,4 @@ def traverse_tree2(head_node, max_depth=10):
             except: pass
         curr_nodes = next_nodes
 
-traverse_tree2(head_node, 5) # start the traversal at the top node
+traverse_tree2(head_node, 4) # start the traversal at the top node
