@@ -5,15 +5,20 @@ import random
 
 print('MDSplus version:', mds.__version__)
 
+MAX_DEPTH = 6 # maximum depth to traverse the tree
+
 rfx = mds.Tree('rfx', 30810, 'readonly') # open the tree
 
 # head_node = rfx.getNode('\\TOP') # get the top node
 head_node = rfx.getNode('\\TOP.RFX') # get the top node
 
-def traverse_tree(node, level=0, max_depth=10):
-    if level >= max_depth: return
-    color = '\033[38;5;{}m'.format(random.randint(0, 231)) # random terminal color
-    print(color + '  ' * level + node.node_name + '\033[0m') # print the name of the node 
+#color the terminal output
+COLORS = ['\033[38;5;{}m'.format(random.randint(0, 231)) for _ in range(MAX_DEPTH)]
+ENDC = '\033[0m'
+
+def traverse_tree(node, level=0):
+    if level >= MAX_DEPTH: return # stop if the maximum depth is reached
+    print(COLORS[level] + '   ' * level + node.node_name + ENDC) # print the name of the node 
     children = node.getChildren() # get the children of the node
     members = node.getMembers() # get the members of the node
     for child in children:
@@ -23,28 +28,25 @@ def traverse_tree(node, level=0, max_depth=10):
     #     try: traverse_tree(member, level + 1)
     #     except: pass        
 
-traverse_tree(head_node, 0, max_depth=6) # start the traversal at the top node
+traverse_tree(head_node, 0, MAX_DEPTH=6) # start the traversal at the top node
+
+print('\n' * 10) # add some space
 
 # do the same but without recursion
-def traverse_tree2(head_node, max_depth=10):
-    # define max_depth random terminal colors
-    colors = ['\033[38;5;{}m'.format(random.randint(0, 231)) for _ in range(max_depth)]
-    ec = '\033[0m' # end color
-    # for _ in range(max_depth):
-    #     colors.append('\e[38;5;{}m'.format(random.randint(0, 255)))
+def traverse_tree2(head_node):
     curr_nodes = [head_node]
-    for d in range(max_depth):
+    for d in range(MAX_DEPTH):
         print('Depth:', d)
         next_nodes = []
         for node in curr_nodes:
-            print(colors[d] + "   " * d + node.node_name + ec)
+            print(COLORS[d] + "   " * d + node.node_name + EC)
 
             # get data in the node (if any)
             try:
                 data = node.data 
-                print(colors[d] + "   " * d + str(data) + ec)
+                print(COLORS[d] + "   " * d + str(data) + EC)
             except:
-                print(colors[d] + "   " * d + "_____________" + ec)
+                print(COLORS[d] + "   " * d + "_____________" + EC)
 
             # get the children of the node
             try:
@@ -53,4 +55,4 @@ def traverse_tree2(head_node, max_depth=10):
             except: pass
         curr_nodes = next_nodes
 
-# traverse_tree2(head_node, 5) # start the traversal at the top node
+traverse_tree2(head_node, 5) # start the traversal at the top node
