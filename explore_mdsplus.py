@@ -55,4 +55,4 @@ def traverse_tree2(head_node):
             except: pass
         curr_nodes = next_nodes
 
-traverse_tree2(head_node) # start the traversal at the top node
+# traverse_tree2(head_node) # start the traversal at the top node
