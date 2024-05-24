@@ -28,7 +28,7 @@ def traverse_tree(node, level=0):
     #     try: traverse_tree(member, level + 1)
     #     except: pass        
 
-traverse_tree(head_node, 0, MAX_DEPTH=6) # start the traversal at the top node
+traverse_tree(head_node) # start the traversal at the top node
 
 print('\n' * 10) # add some space
 
@@ -39,14 +39,14 @@ def traverse_tree2(head_node):
         print('Depth:', d)
         next_nodes = []
         for node in curr_nodes:
-            print(COLORS[d] + "   " * d + node.node_name + EC)
+            print(COLORS[d] + "   " * d + node.node_name + ENDC)
 
             # get data in the node (if any)
             try:
                 data = node.data 
-                print(COLORS[d] + "   " * d + str(data) + EC)
+                print(COLORS[d] + "   " * d + str(data) + ENDC)
             except:
-                print(COLORS[d] + "   " * d + "_____________" + EC)
+                print(COLORS[d] + "   " * d + "_____________" + ENDC)
 
             # get the children of the node
             try:
@@ -55,4 +55,4 @@ def traverse_tree2(head_node):
             except: pass
         curr_nodes = next_nodes
 
-traverse_tree2(head_node, 5) # start the traversal at the top node
+traverse_tree2(head_node) # start the traversal at the top node
