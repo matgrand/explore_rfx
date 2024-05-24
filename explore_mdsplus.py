@@ -8,7 +8,7 @@ print('test update')
 rfx = mds.Tree('rfx', 30810, 'readonly') # open the tree
 
 # head_node = rfx.getNode('\\TOP') # get the top node
-head_node = rfx.getNode('\\TOP/RFX') # get the top node
+head_node = rfx.getNode('\\TOP.RFX') # get the top node
 
 def traverse_tree(node, level=0):
     print('  ' * level + node.node_name) # print the name of the node 
