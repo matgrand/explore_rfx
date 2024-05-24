@@ -35,7 +35,8 @@ def traverse_tree2(head_node, max_depth=10):
             try:
                 data = node.data()
                 print("   " * d + str(data))
-            except: pass
+            except:
+                print("   " * d + "No data")
 
             # get the children of the node
             try:
@@ -44,4 +45,4 @@ def traverse_tree2(head_node, max_depth=10):
             except: pass
         curr_nodes = next_nodes
 
-traverse_tree2(head_node, 3) # start the traversal at the top node
+traverse_tree2(head_node, 4) # start the traversal at the top node
