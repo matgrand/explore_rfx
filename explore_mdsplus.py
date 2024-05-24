@@ -2,7 +2,13 @@
 import MDSplus as mds
 import os
 
+print('MDSplus version:', mds.__version__)
+print('test update')
+
 rfx = mds.Tree('rfx', 30810, 'readonly') # open the tree
+
+# head_node = rfx.getNode('\\TOP') # get the top node
+head_node = rfx.getNode('\\TOP\\RFX') # get the top node
 
 def traverse_tree(node, level=0):
     print('  ' * level + node.node_name) # print the name of the node 
@@ -15,19 +21,20 @@ def traverse_tree(node, level=0):
         try: traverse_tree(member, level + 1)
         except: pass        
 
-# traverse_tree(rfx.getNode('\\TOP')) # start the traversal at the top node
+# traverse_tree(head_node) # start the traversal at the top node
 
 # do the same but without recursion
-MAX_DEPTH = 5
-curr_nodes = [rfx.getNode('\\TOP')]
-for d in range(MAX_DEPTH):
-    print('Depth:', d)
-    next_nodes = []
-    for node in curr_nodes:
-        print("   " * d + node.node_name)
-        try:
-            for child in node.getChildren():
-                next_nodes.append(child)
-        except: pass
-    
-    curr_nodes = next_nodes
+def traverse_tree2(head_node, max_depth=10):
+    curr_nodes = [head_node]
+    for d in range(max_depth):
+        print('Depth:', d)
+        next_nodes = []
+        for node in curr_nodes:
+            print("   " * d + node.node_name)
+            try:
+                for child in node.getChildren():
+                    next_nodes.append(child)
+            except: pass
+        curr_nodes = next_nodes
+
+traverse_tree2(head_node, 5) # start the traversal at the top node
