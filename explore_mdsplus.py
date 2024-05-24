@@ -10,7 +10,8 @@ rfx = mds.Tree('rfx', 30810, 'readonly') # open the tree
 # head_node = rfx.getNode('\\TOP') # get the top node
 head_node = rfx.getNode('\\TOP.RFX') # get the top node
 
-def traverse_tree(node, level=0):
+def traverse_tree(node, level=0, max_depth=10):
+    if level >= max_depth: return
     color = '\033[38;5;{}m'.format(random.randint(0, 231)) # random terminal color
     print(color + '  ' * level + node.node_name + '\033[0m') # print the name of the node 
     children = node.getChildren() # get the children of the node
@@ -18,11 +19,11 @@ def traverse_tree(node, level=0):
     for child in children:
         try: traverse_tree(child, level + 1)
         except: pass
-    for member in members:
-        try: traverse_tree(member, level + 1)
-        except: pass        
+    # for member in members:
+    #     try: traverse_tree(member, level + 1)
+    #     except: pass        
 
-traverse_tree(head_node) # start the traversal at the top node
+traverse_tree(head_node, 0, max_depth=6) # start the traversal at the top node
 
 # do the same but without recursion
 def traverse_tree2(head_node, max_depth=10):
