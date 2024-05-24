@@ -26,7 +26,7 @@ def traverse_tree(node, level=0):
 # do the same but without recursion
 def traverse_tree2(head_node, max_depth=10):
     # define max_depth random terminal colors
-    colors = ['\e[38;5;{}m'.format(random.randint(0, 255)) for _ in range(max_depth)]
+    colors = ['\033[38;5;{}m'.format(random.randint(0, 255)) for _ in range(max_depth)]
     ec = '\033[0m' # end color
     # for _ in range(max_depth):
     #     colors.append('\e[38;5;{}m'.format(random.randint(0, 255)))
