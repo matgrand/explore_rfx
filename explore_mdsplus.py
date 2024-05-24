@@ -3,7 +3,6 @@ import MDSplus as mds
 import os
 
 print('MDSplus version:', mds.__version__)
-print('test update')
 
 rfx = mds.Tree('rfx', 30810, 'readonly') # open the tree
 
@@ -31,10 +30,18 @@ def traverse_tree2(head_node, max_depth=10):
         next_nodes = []
         for node in curr_nodes:
             print("   " * d + node.node_name)
+
+            # get data in the node (if any)
+            try:
+                data = node.data()
+                print("   " * d + str(data))
+            except: pass
+
+            # get the children of the node
             try:
                 for child in node.getChildren():
                     next_nodes.append(child)
             except: pass
         curr_nodes = next_nodes
 
-traverse_tree2(head_node, 4) # start the traversal at the top node
+traverse_tree2(head_node, 3) # start the traversal at the top node
