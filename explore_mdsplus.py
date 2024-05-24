@@ -24,9 +24,9 @@ def traverse_tree(node, level=0):
     for child in children:
         try: traverse_tree(child, level + 1)
         except: pass
-    # for member in members:
-    #     try: traverse_tree(member, level + 1)
-    #     except: pass        
+    for member in members:
+        try: traverse_tree(member, level + 1)
+        except: pass        
 
 traverse_tree(head_node) # start the traversal at the top node
 
