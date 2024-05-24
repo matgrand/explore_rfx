@@ -33,7 +33,7 @@ def traverse_tree2(head_node, max_depth=10):
 
             # get data in the node (if any)
             try:
-                data = node.data()
+                data = node.data 
                 print("   " * d + str(data))
             except:
                 print("   " * d + "_____________")
