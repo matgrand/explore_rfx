@@ -14,25 +14,15 @@ def pick_random_color():
     return '\033[38;5;{}m'.format(random.randint(8, 230))
 COLORS = [pick_random_color() for i in range(MAX_DEPTH)]
 ENDC = '\033[0m'
-
-def print_node(node, preprint=''):
-    try:
-        data = node.decompile()
-        # data = vars(node)
-        print(preprint + ':' + str(data))
-    except Exception as e:
-        print(preprint + node.node_name + 'ERR:' + str(e))
-
+        
 def traverse_tree_depth_first(node, level=0, path='', node_type='child'):
     try: 
         if level >= MAX_DEPTH: return # stop if the maximum depth is reached
         if node_type == 'child': node_name = node.node_name.upper()
         elif node_type == 'member': node_name = node.node_name.lower()
         else: raise ValueError('node_type must be either "child" or "member"') 
-        path = path + '/' + COLORS[level] + node.node_name + ENDC
-        # print(path)
-        print_node(node, path)
-        
+        path = path + '/' + COLORS[level] + node_name + ENDC # add the node name
+        print(f'{path}:{node.decompile()}') 
         # go through the children and members of the node
         for child in node.getChildren(): # get the children of the node
             traverse_tree_depth_first(child, level + 1, path, 'child')
@@ -51,8 +41,7 @@ def traverse_tree_breadth_first(head_node):
         for node in curr_nodes:
             try:
                 preprint = COLORS[d] + "   " * d + node.node_name + ENDC
-                print(preprint)
-                print_node(node, preprint)
+                print(f'{preprint}:{node.decompile()}') # print the node
                 # get the children of the node
                 for child in node.getChildren():
                     next_nodes.append(child)
@@ -93,8 +82,8 @@ if __name__ == '__main__':
     # head_node = rfx.getNode('\\TOP') # get the top node
     head_node = rfx.getNode('\\TOP.RFX') # get the top node
         
-    traverse_tree_depth_first(head_node) # start the traversal at the top node
-    traverse_tree_breadth_first(head_node) # start the traversal at the top node
+    # traverse_tree_depth_first(head_node) # start the traversal at the top node
+    # traverse_tree_breadth_first(head_node) # start the traversal at the top node
     explore_signals('\\TOP.RFX.MHD.***') 
 
 

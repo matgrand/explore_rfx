@@ -1,5 +1,5 @@
 # Stuff I learned exploring the RFX tree
-This will be either a short or a long list:
+This will be either a short list or a long list:
 - There are signals with no raw data, but values and timesteps are just 2 arrays
 - most signals are built with a raw signal, timesteps are a formula from which the actual timestamps
   array is built. Values are also built with a formula from the raw signal.
