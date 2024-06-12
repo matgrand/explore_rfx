@@ -10,3 +10,5 @@ This will be either a short list or a long list:
   https://www.mdsplus.org/index.php/Documentation:dt_dimension
 - In the paths to the nodes: '.' means its a child, and ':' means its a member of the previous node.
 - node.getUSAGE() returns the usage of the node, like SIGNAL, NUMERIC, SUBTREE, etc.
+- if a node has children then it does not have data
+- if a node has members it may have data
