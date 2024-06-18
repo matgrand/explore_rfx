@@ -12,3 +12,5 @@ This will be either a short list or a long list:
 - node.getUSAGE() returns the usage of the node, like SIGNAL, NUMERIC, SUBTREE, etc.
 - if a node has children then it does not have data
 - if a node has members it may have data
+- shot 30810 \\TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_1:CLOCK_SOURCE throws segmentation fault
+
