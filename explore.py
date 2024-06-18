@@ -39,6 +39,34 @@ SHOT = 30810
 rfx = mds.Tree('rfx', SHOT, 'readonly') # open the tree read-only
 
 
+# In[ ]:
+
+
+SEG_FAULT_NODES = [
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_1:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_10:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.DIAG.DTER.DTER_RAW.TIMING:DECODER_01.CHANNEL_3:SPECIAL_GATE',
+    '\\RFX::TOP.RFX.DIAG.DTER.DTER_RAW.TIMING:DECODER_01.CHANNEL_5:REPEAT_COUNT',
+    '\\RFX::TOP.RFX.DIAG.DTER.DTER_RAW.TIMING:DECODER_01.CHANNEL_5:SPECIAL_GATE',
+    '\\RFX::TOP.RFX.DIAG.DTER.DTER_RAW.TIMING:K3115_01.CHANNEL_01:VOLTAGES',
+    '\\RFX::TOP.RFX.DIAG.DTER.DTER_RAW.TIMING:K3115_01.CHANNEL_01:TIME_MODE',
+    '\\RFX::TOP.RFX.DIAG.DTER.DTER_RAW.TIMING:DECODER_01.CHANNEL_5:LOAD',
+    '\\RFX::TOP.RFX.DIAG.DTER.DTER_RAW.TIMING:K3115_01.CHANNEL_02:OUTPUT',
+    '\\RFX::TOP.RFX.DIAG.DTER.DTER_RAW.TIMING:K3115_01.CHANNEL_02:VOLTAGES',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_11:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_12:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_2:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_3:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_4:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_5:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_6:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_7:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_8:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_9:CLOCK_SOURCE',
+    '\\RFX::TOP.RFX.MHD.MHD_BR:CPCI_1:TIMING:DIO2_1.CHANNEL_1:CLOCK',
+]
+
+
 # ## Traversing the tree
 
 # In[ ]:
@@ -46,18 +74,21 @@ rfx = mds.Tree('rfx', SHOT, 'readonly') # open the tree read-only
 
 # traverse the tree, use MAX_DEPTH to limit the depth of the tree to traverse
 # othwerwise the script will run for about 10 minutes
-MAX_DEPTH = 5 # maximum depth of the tree to traverse
+MAX_DEPTH = 13 # maximum depth of the tree to traverse
 COLORS = [pick_random_color() for i in range(MAX_DEPTH)]
 
 usage_depth, usage_breadth = {},{}
+total_nodes_depth, total_nodes_breadth = [],[]
 
 def traverse_tree_depth_first(max_depth, node, level=0, path='', node_type='child'):
     try: 
         if level >= max_depth: return # stop if the maximum depth is reached
+        if node.getFullPath() in SEG_FAULT_NODES: return # skip the nodes that cause segfault
         if node_type == 'child': node_name = node.node_name.upper()
         elif node_type == 'member': node_name = node.node_name.lower()
         else: raise
         path = path + '/' + COLORS[level] + node_name + ENDC # add the node name
+        total_nodes_depth.append(node) # add the node to the list
         print(f'{path}:{node.decompile()}') 
         # get the usage/type of the node
         try: usage_depth[str(node.usage)] += 1
@@ -79,8 +110,10 @@ def traverse_tree_breadth_first(max_depth, head_node):
         next_nodes = []
         for node in curr_nodes:
             try:
+                if node.getFullPath() in SEG_FAULT_NODES: continue # skip the nodes that cause segfault
                 preprint = COLORS[d] + "   " * d + node.node_name + ENDC
                 print(f'{preprint}:{node.decompile()}') # print the node
+                total_nodes_breadth.append(node) # add the node to the list
                 # get the usage/type of the node
                 try: usage_breadth[str(node.usage)] += 1
                 except: usage_breadth[str(node.usage)] = 1
@@ -96,8 +129,11 @@ def traverse_tree_breadth_first(max_depth, head_node):
 head_node = rfx.getNode('\\TOP.RFX') # get the top node
 
 # test the functions, uncomment to run
-# traverse_tree_depth_first(MAX_DEPTH, head_node) # traverse the tree depth-first
-# traverse_tree_breadth_first(MAX_DEPTH, head_node) # traverse the tree breadth-first
+traverse_tree_depth_first(MAX_DEPTH, head_node) # traverse the tree depth-first
+traverse_tree_breadth_first(MAX_DEPTH, head_node) # traverse the tree breadth-first
+
+print(f'Total nodes depth: {len(total_nodes_depth)}') # 96771
+print(f'Total nodes breadth: {len(total_nodes_breadth)}') # 96771
 
 
 # In[ ]:
@@ -200,70 +236,6 @@ HDF5_FILE = f'rfx_{SHOT}.hdf5'
 # In[ ]:
 
 
-def convert_tree_hdf5(head_node, new_tree_file):
-    #explore all the tree and save the data to the hdf5 file
-    max_depth = 4
-    with h5.File(new_tree_file, 'w') as f:
-        curr_nodes = [(head_node,'child')]
-        tot_nodes_explored, valid_nodes, signal_nodes = 0, 0, 0
-        for d in range(max_depth):
-            print('Depth:', d)
-            next_nodes = []
-            for node, node_type in curr_nodes:
-                tot_nodes_explored += 1
-                full_path = str(node.getFullPath())[10:]#.lower() # remove the \\TOP.RFX prefix
-                full_path = full_path.replace('.', '/') #convert . to /
-                
-                try: # get the children and members of the node
-                    for child in node.getChildren(): next_nodes.append((child, 'child'))
-                    for member in node.getMembers(): next_nodes.append((member, 'member'))
-                except: pass # do nothing if the node has no children or members
-                
-                usage = str(node.usage)
-                
-                # check if the node has data
-                try: data = node.data()
-                except: data = None
-                
-                #check if the node has time
-                try: times = node.dim_of().data()
-                except: times = None
-                
-                # VARIOUS CHECKS
-                if usage == 'SIGNAL' and data is None: # signal without data
-                    print(f'{full_path} is signal but has no data'); continue
-                if usage == 'SIGNAL' and data is not None and times is None: # signal with data but no time
-                    print(f'{full_path} is signal with data but no time: data: {data}'); continue
-                if usage == 'NUMERIC' and data is None: # numeric without data
-                    print(f'{full_path} is numeric but has no data'); continue
-                if data is not None and times is not None: # node with data and time
-                    if data.shape != times.shape: # mismatched signal and time shapes, multidimensional signals are notable exceptions, but for now we skip them
-                        print(f'{full_path} has mismatched signal and time shapes, {data.shape} != {times.shape}'); continue
-                    if usage != 'SIGNAL': # not a signal but has data and time
-                        print(f'{full_path} is not signal but has data and time'); continue
-                        
-                valid_nodes += 1 # valid node
-                
-                if usage in ['SIGNAL', 'NUMERIC']: # save the data to the hdf5 file
-                    signal_nodes += 1
-                    if data is not None: f.create_dataset(full_path, data=data)
-                    if times is not None: f.create_dataset(full_path + '/times', data=times)
-                
-                # print(f'{full_path}:{usage.lower()}')
-                
-                # print(f'{valid_nodes}/{tot_nodes_explored} with usage {usage} and data {data}')
-                
-            curr_nodes = next_nodes # update the current nodes
-    
-    print(f'Valid nodes: {valid_nodes}/{tot_nodes_explored}, {valid_nodes/tot_nodes_explored*100:.2f}%')
-    print(f'Signal nodes: {signal_nodes}/{valid_nodes}, {signal_nodes/valid_nodes*100:.2f}%')
-# test the function
-# convert_tree_hdf5(rfx.getNode('\\RFX::TOP.RFX'), HDF5_FILE)
-
-
-# In[ ]:
-
-
 # functions to check if the node has data, time, children or members
 def hasData(node):
     try: _ = node.data(); return True
@@ -320,7 +292,7 @@ for snpath in SEG_FAULT_NODES:
 
 
 # let's do the same but without recursion
-MAX_DEPTH = 64
+MAX_DEPTH = 12
 with h5.File(HDF5_FILE, 'w') as hdf:
     skipped_nodes = 0
     def explore_tree(start_node=rfx.getNode('\\TOP.RFX'), max_depth=4):
@@ -335,7 +307,6 @@ with h5.File(HDF5_FILE, 'w') as hdf:
                 npath = npath[10:].replace('.', '/').replace(':', '/')
                 length = node.length # length of data in bytes, uncompressed
                 if length > 10_000_000: print(f'{WARN}NODE {npath} has length {length}{ENDC}')
-                if length > 100_000_000: print(f'{ERR}NODE {npath} has length {length}{ENDC}'); continue
                 
                 is_child = node.isChild()
                 is_member = node.isMember()
@@ -354,9 +325,13 @@ with h5.File(HDF5_FILE, 'w') as hdf:
                 if has_data and has_children: print(f'{ERR}NODE {npath} has DATA and CHILDREN: data: {node.data()}, CHILDREN: {node.getChildren()}{ENDC}')
                 if has_data and has_members: print(f'{WARN}node {npath} has data and members: data: {node.data()}, members: {node.getMembers()}{ENDC}')
                 
-                # if has_data: # save the data to the hdf5 file
-                #     data = node.data()
-                #     hdf.create_dataset(path, data=data)
+                if has_data: # save the data to the hdf5 file
+                    data = node.data()
+                    try:
+                        # hdf.create_dataset(npath, data=data)
+                        hdf.create_dataset(f'{npath}/dataset', data=0)
+                    except Exception as e:
+                        print(f'{ERR}NODE {npath} has data but failed to save: {e}{ENDC}')
                 
                 if has_children:
                     for child in node.getChildren(): next_nodes.append(child)
@@ -378,9 +353,11 @@ with h5.File(HDF5_FILE, 'w') as hdf:
 
 
 # print the tree structure
+tot_nodes_hdf5 = []
 def h5_tree(vals, pre='', mid_syms=('├────','│     '), end_syms=('└────','      ')):
     for i, (key, val) in enumerate(vals.items()):
         s1, s2 = end_syms if i == len(vals)-1 else mid_syms
+        tot_nodes_hdf5.append(key)
         if type(val) == h5.Group: 
             print(f'{pre}{s1} {key}') 
             h5_tree(val, f'{pre}{s2}', mid_syms, end_syms)
@@ -390,5 +367,8 @@ def h5_tree(vals, pre='', mid_syms=('├────','│     '), end_syms=('�
 # In[ ]:
 
 
-with h5.File(HDF5_FILE, 'r') as f: h5_tree(f)
+with h5.File(HDF5_FILE, 'r') as f: 
+    h5_tree(f)
+    # print the total number of nodes in the hdf5 file
+    print(f'Total nodes in the HDF5 file: {len(tot_nodes_hdf5)}') # 77395
 
