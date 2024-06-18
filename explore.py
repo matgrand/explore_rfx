@@ -128,12 +128,12 @@ def traverse_tree_breadth_first(max_depth, head_node):
         
 head_node = rfx.getNode('\\TOP.RFX') # get the top node
 
-# test the functions, uncomment to run
-traverse_tree_depth_first(MAX_DEPTH, head_node) # traverse the tree depth-first
-traverse_tree_breadth_first(MAX_DEPTH, head_node) # traverse the tree breadth-first
+# # test the functions, uncomment to run
+# traverse_tree_depth_first(MAX_DEPTH, head_node) # traverse the tree depth-first
+# traverse_tree_breadth_first(MAX_DEPTH, head_node) # traverse the tree breadth-first
 
-print(f'Total nodes depth: {len(total_nodes_depth)}') # 96771
-print(f'Total nodes breadth: {len(total_nodes_breadth)}') # 96771
+# print(f'Total nodes depth: {len(total_nodes_depth)}') # 96771, 96750
+# print(f'Total nodes breadth: {len(total_nodes_breadth)}') # 96771, 96750
 
 
 # In[ ]:
@@ -328,8 +328,8 @@ with h5.File(HDF5_FILE, 'w') as hdf:
                 if has_data: # save the data to the hdf5 file
                     data = node.data()
                     try:
-                        # hdf.create_dataset(npath, data=data)
-                        hdf.create_dataset(f'{npath}/dataset', data=0)
+                        hdf.create_dataset(npath, data=data)
+                        # hdf.create_dataset(f'{npath}/dataset', data=0)
                     except Exception as e:
                         print(f'{ERR}NODE {npath} has data but failed to save: {e}{ENDC}')
                 
@@ -370,5 +370,5 @@ def h5_tree(vals, pre='', mid_syms=('├────','│     '), end_syms=('�
 with h5.File(HDF5_FILE, 'r') as f: 
     h5_tree(f)
     # print the total number of nodes in the hdf5 file
-    print(f'Total nodes in the HDF5 file: {len(tot_nodes_hdf5)}') # 77395
+    print(f'Total nodes in the HDF5 file: {len(tot_nodes_hdf5)}') # 77395, 145291
 
