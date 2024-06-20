@@ -81,7 +81,7 @@ def convert_mds_tree2hdf(hdf:h5.File, start_node=None, max_depth=4):
             nusage = str(node.usage)
             
             # check if there is 'video' in the name
-            if nname.lower().find('video') > -1: print(f'{ERR}NODE {npath} has VIDEO in the name{ENDC}, skipping'); continue
+            if nname.lower().find('video') > -1: print(f'{ERR}NODE {npath} has VIDEO in the name, skipping{ENDC}'); continue
             
             if has_children or has_members: 
                 group = hdf.create_group(npath)  
