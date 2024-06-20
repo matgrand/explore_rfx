@@ -57,7 +57,7 @@ def hasMembers(node):
 # let's do the same but without recursion
 MAX_DEPTH = 12
 
-def convert_mds_tree2hdf(hdf, start_node=None, max_depth=4):
+def convert_mds_tree2hdf(hdf:h5.File, start_node=None, max_depth=4):
     curr_nodes = [start_node]
     for d in range(max_depth):
         next_nodes = []
@@ -65,7 +65,7 @@ def convert_mds_tree2hdf(hdf, start_node=None, max_depth=4):
         # for node in curr_nodes:
             npath = str(node.getFullPath())
             # print(f'{npath}')
-            if npath in SEG_FAULT_NODES: print(f'{ERR}Skipping {npath}{ENDC}'); continue
+            if npath in SEG_FAULT_NODES: continue # skip the nodes that cause seg faults
             npath = npath[10:].replace('.', '/').replace(':', '/')
             length = node.length # length of data in bytes, uncompressed
             if length > 10_000_000: print(f'{WARN}NODE {npath} has length {length}{ENDC}')
@@ -80,10 +80,13 @@ def convert_mds_tree2hdf(hdf, start_node=None, max_depth=4):
             nname = node.node_name.upper() if is_child else node.node_name.lower()
             nusage = str(node.usage)
             
+            # check if there is 'video' in the name
+            if nname.lower().find('video') > -1: print(f'{ERR}NODE {npath} has VIDEO in the name{ENDC}, skipping'); continue
+            
             if has_children or has_members: 
                 group = hdf.create_group(npath)  
                 group.attrs['usage'] = nusage  
-                
+            
             if has_data and has_children: print(f'{ERR}NODE {npath} has DATA and CHILDREN: data: {node.data()}, CHILDREN: {node.getChildren()}{ENDC}')
             if has_data and has_members: print(f'{WARN}node {npath} has data and members: data: {node.data()}, members: {node.getMembers()}{ENDC}')
             
@@ -92,7 +95,9 @@ def convert_mds_tree2hdf(hdf, start_node=None, max_depth=4):
                 dtype = str(data.dtype)
                 if dtype.startswith('<U'): data = str(data)
                 try:
-                    hdf.create_dataset(npath, data=data)
+                    ds = hdf.create_dataset(npath, data=data)
+                    ds.attrs['dtype'] = dtype
+                    ds.attrs['usage'] = nusage
                     # hdf.create_dataset(f'{npath}/dataset', data=0)
                 except Exception as e:
                     print(f'{ERR}NODE {npath} has data but failed to save: {e}\ndtype:{dtype}, length:{length}, \ndata:{data}{ENDC}')
@@ -103,7 +108,6 @@ def convert_mds_tree2hdf(hdf, start_node=None, max_depth=4):
                 for member in node.getMembers(): next_nodes.append(member)                
         curr_nodes = next_nodes
 
-
 # print the tree structure
 tot_nodes_hdf5 = []
 def h5_tree(tree, pre='', mid_syms=('├────','│     '), end_syms=('└────','      ')):
@@ -113,15 +117,19 @@ def h5_tree(tree, pre='', mid_syms=('├────','│     '), end_syms=('�
         if type(val) == h5.Group: 
             print(f'{pre}{s1} {key}') 
             h5_tree(val, f'{pre}{s2}', mid_syms, end_syms)
-        else: print(f'{pre}{s1} {key} [{val.shape if val is not None else None} {val.dtype if val is not None else None}]')
-
+        else: 
+            shape = val.shape if val is not None else None
+            dtype = val.dtype if val is not None else None
+            usage = val.attrs.get('usage', None)
+            print(f'{pre}{s1} {key} [{shape} {dtype}] {usage}')
 
 if __name__ == '__main__':    
     print(f'MDSplus version: {mds.__version__}')
     
     rfx = mds.Tree('rfx', SHOT, 'readonly') # open the tree read-only
-    # HEAD_NODE = rfx.getNode('\\TOP.RFX')    
-    HEAD_NODE = rfx.getNode('\\TOP.RFX.MHD')    
+    HEAD_NODE = rfx.getNode('\\TOP.RFX')    
+    # HEAD_NODE = rfx.getNode('\\TOP.RFX.MHD')    
+    # HEAD_NODE = rfx.getNode('\\TOP.RFX.MHD')    
 
     with h5.File(HDF5_FILE, 'w') as f:
         convert_mds_tree2hdf(f, HEAD_NODE, MAX_DEPTH)    
