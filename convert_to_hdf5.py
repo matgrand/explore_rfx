@@ -57,51 +57,82 @@ def hasMembers(node):
 # let's do the same but without recursion
 MAX_DEPTH = 12
 
-def convert_mds_tree2hdf(hdf:h5.File, start_node=None, max_depth=4):
+def convert_mds_tree2hdf(hdf:h5.File, start_node=None, only_raw=True, videos=False, max_depth=4):
     curr_nodes = [start_node]
     for d in range(max_depth):
         next_nodes = []
         for node in tqdm(curr_nodes, desc=f'Depth {d}:', ncols=80):
-        # for node in curr_nodes:
-            npath = str(node.getFullPath())
-            # print(f'{npath}')
+            # GET STUFF ABOUT THE NODE
+            npath = str(node.getFullPath()) # full path of the node in the tree
             if npath in SEG_FAULT_NODES: continue # skip the nodes that cause seg faults
-            npath = npath[10:].replace('.', '/').replace(':', '/')
+            npath = npath[10:].replace('.', '/').replace(':', '/') # remove the first 10 characters and replace . and : with /
             length = node.length # length of data in bytes, uncompressed
             if length > 10_000_000: print(f'{WARN}NODE {npath} has length {length}{ENDC}')
-            
-            is_child = node.isChild()
+            is_child = node.isChild() 
             is_member = node.isMember()
-            assert (is_child or is_member) and not (is_child and is_member)
             has_children = hasChildren(node)
             has_members = hasMembers(node)
             has_time = hasTime(node)
             has_data = hasData(node)
-            nname = node.node_name.upper() if is_child else node.node_name.lower()
-            nusage = str(node.usage)
+            ndata = node.data() if has_data else None
+            ntime = node.dim_of().data() if has_time else None
+            nname = node.node_name.upper() # name of the node
+            nusage = str(node.usage).upper() # usage of the node: SIGNAL, STRUCTURE, NUMERIC, etc.
             
+            # CHECK LOGIC INTEGRITY + DATA CLEANING
+            # assert->very important, ERROR->less important, WARN->not important
+            assert (is_child or is_member) and not (is_child and is_member) # can't be both child and member
             # check if there is 'video' in the name
-            if nname.lower().find('video') > -1: print(f'{ERR}NODE {npath} has VIDEO in the name, skipping{ENDC}'); continue
+            if videos and nname.lower().find('video') > -1: 
+                print(f'{ERR}NODE {npath} has VIDEO in the name, skipping{ENDC}')
+                continue # skip the nodes that have 'video' in the name
+            # check children and members data logic integrity
+            if has_data and has_children: 
+                print(f'{WARN}NODE {npath} has DATA and CHILDREN: data: {node.data()}, CHILDREN: {node.getChildren()}{ENDC}')
+            if has_data and has_members: 
+                print(f'{WARN}node {npath} has data and members: data: {node.data()}, members: {node.getMembers()}{ENDC}')
+            # check signal logic integrity
+            if nusage == 'SIGNAL' and not (has_data and has_time): 
+                print(f'{ERR}NODE {npath} is a SIGNAL but has no data or time{ENDC}')
+                continue # skip signal nodes that have no data or time
+            if has_data and has_time:
+                if len(ndata) == len(ntime): nusage = 'SIGNAL'# it is actually a signal
+                else: # different lengths of data and time -> not signal or bad signal
+                    print(f'{ERR}NODE {npath} has data and time but different lengths: {len(ndata)} != {len(ntime)}{ENDC}')
+                    continue # skip the nodes that have different lengths of data and time
+            # a signal is a signal if and only if it has data and time and the lengths are the same
+            if has_data and has_time and len(ndata) == len(ntime): assert nusage == 'SIGNAL'
+            if nusage == 'SIGNAL': assert has_data and has_time and len(ndata) == len(ntime)
             
+            #keep only raw signals
+            if only_raw and nusage == 'SIGNAL' and npath.lower().find('raw') == -1: 
+                print(f'{OK}NODE {npath} is SIGNAL but not RAW, skipping{ENDC}')
+                continue
+            
+            # BUILD THE HDF5 TREE
             if has_children or has_members: 
                 group = hdf.create_group(npath)  
                 group.attrs['usage'] = nusage  
             
-            if has_data and has_children: print(f'{ERR}NODE {npath} has DATA and CHILDREN: data: {node.data()}, CHILDREN: {node.getChildren()}{ENDC}')
-            if has_data and has_members: print(f'{WARN}node {npath} has data and members: data: {node.data()}, members: {node.getMembers()}{ENDC}')
-            
             if has_data: # save the data to the hdf5 file
-                data = node.data()
-                dtype = str(data.dtype)
-                if dtype.startswith('<U'): data = str(data)
-                try:
-                    ds = hdf.create_dataset(npath, data=data)
-                    ds.attrs['dtype'] = dtype
-                    ds.attrs['usage'] = nusage
-                    # hdf.create_dataset(f'{npath}/dataset', data=0)
-                except Exception as e:
-                    print(f'{ERR}NODE {npath} has data but failed to save: {e}\ndtype:{dtype}, length:{length}, \ndata:{data}{ENDC}')
-            
+                if has_time: # is a signal
+                    try:
+                        ds = hdf.create_dataset(npath, data=ndata)
+                        ds.attrs['dtype'] = str(ndata.dtype)
+                        ds.attrs['usage'] = nusage
+                        ds.attrs['time'] = ntime
+                    except Exception as e:
+                        print(f'{ERR}NODE {npath} is SIGNAL but failed to save: {e}\ndata:{ndata}, time:{ntime}{ENDC}')
+                else: # not signal: text, numeric
+                    dtype = str(ndata.dtype)
+                    if dtype.startswith('<U'): ndata = str(ndata)
+                    try:
+                        ds = hdf.create_dataset(npath, data=ndata)
+                        ds.attrs['dtype'] = dtype
+                        ds.attrs['usage'] = nusage
+                    except Exception as e:
+                        print(f'{ERR}NODE {npath} has data but failed to save: {e}\ndtype:{dtype}, length:{length}, \ndata:{data}{ENDC}')
+                
             if has_children:
                 for child in node.getChildren(): next_nodes.append(child)
             if has_members:
@@ -127,12 +158,10 @@ if __name__ == '__main__':
     print(f'MDSplus version: {mds.__version__}')
     
     rfx = mds.Tree('rfx', SHOT, 'readonly') # open the tree read-only
-    HEAD_NODE = rfx.getNode('\\TOP.RFX')    
-    # HEAD_NODE = rfx.getNode('\\TOP.RFX.MHD')    
-    # HEAD_NODE = rfx.getNode('\\TOP.RFX.MHD')    
+    # HEAD_NODE = rfx.getNode('\\TOP.RFX')    
+    HEAD_NODE = rfx.getNode('\\TOP.RFX.MHD')    
+    # HEAD_NODE = rfx.getNode('\\TOP.RFX.EDA')    
 
     with h5.File(HDF5_FILE, 'w') as f:
-        convert_mds_tree2hdf(f, HEAD_NODE, MAX_DEPTH)    
-    
-    with h5.File(HDF5_FILE, 'r') as f: 
-        h5_tree(f)
+        convert_mds_tree2hdf(f, HEAD_NODE, only_raw=False, videos=False, max_depth=MAX_DEPTH) 
+        h5_tree(f) # print the tree structure
