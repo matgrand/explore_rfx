@@ -2,6 +2,7 @@
 import MDSplus as mds
 from tqdm import tqdm
 import h5py as h5
+import numpy as np
 
 # terminal output colors
 ENDC = '\033[0m'
@@ -53,6 +54,20 @@ def hasChildren(node):
 def hasMembers(node):
     try: return len(node.getMembers()) > 0
     except: return False
+    
+def time2range(v:np.ndarray):
+    #convert a 1d vector of time into the 3 parameters of a range
+    assert isinstance(v, np.ndarray) and len(v) > 1 and v.ndim == 1, f'wrong input: {v}'
+    s, e = v[0], v[-1] # start and end of the time vector
+    assert s < e, f'start:{s} >= end:{e}'
+    v1 = np.linspace(s, e, len(v)) 
+    # v1 = np.arange(s, e, (e-s)/(len(v)))
+    s1, e1 = v1[0], v1[-1]
+    assert np.allclose(s1, s) and np.allclose(e1, e), f'start!=end: {s1} != {s} or {e1} != {e}'
+    diff0, diff1 = np.diff(v), np.diff(v1)
+    stdd0, stdd1 = np.std(diff0), np.std(diff1)
+    assert np.allclose(v, v1), f'not a range: d:{v[1]-v[0]}, d0:{v[1]-v[0]}  norm:{np.linalg.norm(v-v1)}, std0:{stdd0}, std1:{stdd1}'
+    return s, e, len(v)
 
 # let's do the same but without recursion
 MAX_DEPTH = 12
@@ -120,7 +135,7 @@ def convert_mds_tree2hdf(hdf:h5.File, start_node=None, only_raw=True, videos=Fal
                         ds = hdf.create_dataset(npath, data=ndata)
                         ds.attrs['dtype'] = str(ndata.dtype)
                         ds.attrs['usage'] = nusage
-                        ds.attrs['time'] = ntime
+                        ds.attrs['time_range'] = time2range(ntime)
                     except Exception as e:
                         print(f'{ERR}NODE {npath} is SIGNAL but failed to save: {e}\ndata:{ndata}, time:{ntime}{ENDC}')
                 else: # not signal: text, numeric
@@ -156,6 +171,7 @@ def h5_tree(tree, pre='', mid_syms=('├────','│     '), end_syms=('�
 
 if __name__ == '__main__':    
     print(f'MDSplus version: {mds.__version__}')
+    np.set_printoptions(precision=4, suppress=True)
     
     rfx = mds.Tree('rfx', SHOT, 'readonly') # open the tree read-only
     # HEAD_NODE = rfx.getNode('\\TOP.RFX')    
