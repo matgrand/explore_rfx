@@ -180,4 +180,4 @@ if __name__ == '__main__':
 
     with h5.File(HDF5_FILE, 'w') as f:
         convert_mds_tree2hdf(f, HEAD_NODE, only_raw=False, videos=False, max_depth=MAX_DEPTH) 
-        h5_tree(f) # print the tree structure
+        # h5_tree(f) # print the tree structure
