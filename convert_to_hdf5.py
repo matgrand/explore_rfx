@@ -54,11 +54,14 @@ def hasChildren(node):
 def hasMembers(node):
     try: return len(node.getMembers()) > 0
     except: return False
-    
+
+start_ends = [] # list of all the start and end times of the signals
+
 def time2range(vmds:np.ndarray):
     #convert a 1d vector of time into the 3 parameters of a range
     assert isinstance(vmds, np.ndarray) and len(vmds) > 1 and vmds.ndim == 1, f'wrong input: {vmds}'
     s, e = vmds[0], vmds[-1] # start and end of the time vector
+    start_ends.append(np.array([s,e]))
     assert s < e, f'start:{s} >= end:{e}'
     vnp = np.linspace(s, e, len(vmds)) # time vector in numpy format
     # vnp = np.arange(s, e, (e-s)/(len(vmds)))
@@ -76,8 +79,8 @@ def convert_mds_tree2hdf(hdf:h5.File, start_node=None, only_raw=True, videos=Fal
     curr_nodes = [start_node]
     for d in range(max_depth):
         next_nodes = []
-        # for node in tqdm(curr_nodes, desc=f'Depth {d}:', ncols=80):
-        for node in curr_nodes:
+        for node in tqdm(curr_nodes, desc=f'Depth {d}:', ncols=80):
+        # for node in curr_nodes:
             # GET STUFF ABOUT THE NODE
             npath = str(node.getFullPath()) # full path of the node in the tree
             if npath in SEG_FAULT_NODES: continue # skip the nodes that cause seg faults
@@ -139,7 +142,8 @@ def convert_mds_tree2hdf(hdf:h5.File, start_node=None, only_raw=True, videos=Fal
                         ds.attrs['time_range'] = time2range(ntime)
                     except Exception as e:
                         # print(f'{ERR}NODE {npath} is SIGNAL but failed to save: {e}\ndata:{ndata}, time:{ntime}{ENDC}')
-                        print(f'{ERR}NODE {npath} is SIGNAL but failed to save: {e}{ENDC}')
+                        # print(f'{ERR}NODE {npath} is SIGNAL but failed to save: {e}{ENDC}')
+                        pass
                 else: # not signal: text, numeric
                     dtype = str(ndata.dtype)
                     if dtype.startswith('<U'): ndata = str(ndata)
@@ -183,3 +187,8 @@ if __name__ == '__main__':
     with h5.File(HDF5_FILE, 'w') as f:
         convert_mds_tree2hdf(f, HEAD_NODE, only_raw=False, videos=False, max_depth=MAX_DEPTH) 
         # h5_tree(f) # print the tree structure
+    
+    start_ends = np.array(start_ends)
+    #save start and end times
+    np.save(f'start_ends_{SHOT}.npy', start_ends)
+    print(f'Start and end times saved in start_ends_{SHOT}.npy')
