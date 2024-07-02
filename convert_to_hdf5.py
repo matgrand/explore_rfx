@@ -55,19 +55,19 @@ def hasMembers(node):
     try: return len(node.getMembers()) > 0
     except: return False
     
-def time2range(v:np.ndarray):
+def time2range(vmds:np.ndarray):
     #convert a 1d vector of time into the 3 parameters of a range
-    assert isinstance(v, np.ndarray) and len(v) > 1 and v.ndim == 1, f'wrong input: {v}'
-    s, e = v[0], v[-1] # start and end of the time vector
+    assert isinstance(vmds, np.ndarray) and len(vmds) > 1 and vmds.ndim == 1, f'wrong input: {vmds}'
+    s, e = vmds[0], vmds[-1] # start and end of the time vector
     assert s < e, f'start:{s} >= end:{e}'
-    v1 = np.linspace(s, e, len(v)) 
-    # v1 = np.arange(s, e, (e-s)/(len(v)))
-    s1, e1 = v1[0], v1[-1]
+    vnp = np.linspace(s, e, len(vmds)) # time vector in numpy format
+    # vnp = np.arange(s, e, (e-s)/(len(vmds)))
+    s1, e1 = vnp[0], vnp[-1]
     assert np.allclose(s1, s) and np.allclose(e1, e), f'start!=end: {s1} != {s} or {e1} != {e}'
-    diff0, diff1 = np.diff(v), np.diff(v1)
-    stdd0, stdd1 = np.std(diff0), np.std(diff1)
-    assert np.allclose(v, v1), f'not a range: d:{v[1]-v[0]}, d0:{v[1]-v[0]}  norm:{np.linalg.norm(v-v1)}, std0:{stdd0}, std1:{stdd1}'
-    return s, e, len(v)
+    diffmds, diffnp = np.diff(vmds), np.diff(vnp)
+    stdmds, stdnp = np.std(diffmds), np.std(diffnp)
+    assert np.allclose(vmds, vnp), f'not a range: d_mds:{vmds[1]-vmds[0]:.3e}, d_np:{vmds[1]-vmds[0]:.3e}  norm_diff:{np.linalg.norm(vmds-vnp):.3e}, std_mds:{stdmds:.3e}, std_np:{stdnp:.3e}'
+    return s, e, len(vmds)
 
 # let's do the same but without recursion
 MAX_DEPTH = 12
@@ -76,7 +76,8 @@ def convert_mds_tree2hdf(hdf:h5.File, start_node=None, only_raw=True, videos=Fal
     curr_nodes = [start_node]
     for d in range(max_depth):
         next_nodes = []
-        for node in tqdm(curr_nodes, desc=f'Depth {d}:', ncols=80):
+        # for node in tqdm(curr_nodes, desc=f'Depth {d}:', ncols=80):
+        for node in curr_nodes:
             # GET STUFF ABOUT THE NODE
             npath = str(node.getFullPath()) # full path of the node in the tree
             if npath in SEG_FAULT_NODES: continue # skip the nodes that cause seg faults
@@ -137,7 +138,8 @@ def convert_mds_tree2hdf(hdf:h5.File, start_node=None, only_raw=True, videos=Fal
                         ds.attrs['usage'] = nusage
                         ds.attrs['time_range'] = time2range(ntime)
                     except Exception as e:
-                        print(f'{ERR}NODE {npath} is SIGNAL but failed to save: {e}\ndata:{ndata}, time:{ntime}{ENDC}')
+                        # print(f'{ERR}NODE {npath} is SIGNAL but failed to save: {e}\ndata:{ndata}, time:{ntime}{ENDC}')
+                        print(f'{ERR}NODE {npath} is SIGNAL but failed to save: {e}{ENDC}')
                 else: # not signal: text, numeric
                     dtype = str(ndata.dtype)
                     if dtype.startswith('<U'): ndata = str(ndata)
@@ -146,7 +148,7 @@ def convert_mds_tree2hdf(hdf:h5.File, start_node=None, only_raw=True, videos=Fal
                         ds.attrs['dtype'] = dtype
                         ds.attrs['usage'] = nusage
                     except Exception as e:
-                        print(f'{ERR}NODE {npath} has data but failed to save: {e}\ndtype:{dtype}, length:{length}, \ndata:{data}{ENDC}')
+                        print(f'{ERR}NODE {npath} has data but failed to save: {e}\ndtype:{dtype}, length:{length}, \ndata:{ndata}{ENDC}')
                 
             if has_children:
                 for child in node.getChildren(): next_nodes.append(child)

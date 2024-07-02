@@ -13,4 +13,8 @@ This will be either a short list or a long list:
 - if a node has children then it does not have data
 - if a node has members it may have data
 - shot 30810 \\TOP.RFX.MHD.MHD_BR:CPCI_1:ADC:TR10_1:CLOCK_SOURCE throws segmentation fault
-- rfx.getNodeWild(search_space, 'subtree') does not work, searching subtrees does not work for some reason
+- rfx.getNodeWild(search_space, 'subtree') does not work, searching subtrees does not work for some
+  reason
+- times vector can have different sampling rates at different moments in time, also sampling rate
+  is not fully accurate
+
