@@ -6,7 +6,7 @@ This will be either a short list or a long list:
 - Build_Dim(Build_Window(0, 2749, -.33), * : * : .0004) means build a signal range with dt=0.0004,
   it will create a vector of times that has element 0 at -0.33, and took 0 samples before and 2749
   samples after that time. usually the first param is always 0 so that the signal starts at index 0,
-  and the trigger coincides with the first sample.
+  and the trigger coincides with the first sample.cvioao come va 
   https://www.mdsplus.org/index.php/Documentation:dt_dimension
 - In the paths to the nodes: '.' means its a child, and ':' means its a member of the previous node.
 - node.getUSAGE() returns the usage of the node, like SIGNAL, NUMERIC, SUBTREE, etc.
@@ -17,4 +17,5 @@ This will be either a short list or a long list:
   reason
 - times vector can have different sampling rates at different moments in time, also sampling rate
   is not fully accurate
-
+- times that have end greater than 30s are usually not useful, some fitting usually. To be double
+  checked with full tree depth
